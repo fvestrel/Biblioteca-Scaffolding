@@ -120,3 +120,4 @@ POSIBLES PROBLEMAS
     MySQL no esta iniciado o usa otro puerto.
 - "Table 'biblioteca...' doesn't exist":
     falta ejecutar el paso 2 (Update-Database).
+FVE

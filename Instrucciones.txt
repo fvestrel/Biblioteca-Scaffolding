@@ -1,0 +1,122 @@
+===============================================================
+ PROYECTO BIBLIOTECA - INSTRUCCIONES DE VALIDACION
+ ASP.NET Core MVC (.NET 10) + Entity Framework Core + MySQL
+===============================================================
+
+REQUISITOS
+----------
+- Visual Studio 2022 (17.14 o superior) o 2026, con la carga
+  "Desarrollo de ASP.NET y web".
+- SDK de .NET 10.
+- MySQL 8.0 o superior en localhost, puerto 3306.
+  (No funciona con MariaDB / XAMPP.)
+
+
+ANTES DE EMPEZAR
+----------------
+1. Abrir el archivo Biblioteca.slnx en Visual Studio.
+2. Verificar que el servicio de MySQL este iniciado
+   (services.msc > MySQL > Iniciar).
+
+
+PASO 1. CONFIGURAR LA CONEXION A MYSQL
+--------------------------------------
+Por seguridad, la contrasena NO esta en el proyecto.
+La conexion en appsettings.json es:
+
+   Server=localhost;Port=3306;Database=Biblioteca;Uid=root;
+
+1. Hacer clic derecho sobre el proyecto Biblioteca >
+   "Administrar secretos de usuario".
+2. Escribir lo siguiente con su contrasena de MySQL y guardar (Ctrl+S):
+
+   { "MySql:Password": "SU_CONTRASENA" }
+
+Si usa otro usuario o puerto, cambiar Uid o Port en
+appsettings.json. Si ya se tiene una base llamada "Biblioteca",
+cambiar Database= por otro nombre.
+
+
+PASO 2. CREAR LA BASE DE DATOS
+------------------------------
+Menu Herramientas > Administrador de paquetes NuGet >
+Consola del Administrador de paquetes, y ejecutar:
+
+   Update-Database
+
+Debe terminar con "Done.". La base y sus tablas se crean solas,
+no hace falta ejecutar ningun script SQL.
+
+
+PASO 3. VALIDAR LA BASE DE DATOS
+--------------------------------
+En MySQL Workbench ejecutar:
+
+   SHOW TABLES FROM biblioteca;
+
+Resultado esperado (6 tablas):
+   autores, categorias, libros, prestamos, socios
+   y __efmigrationshistory.
+
+Las 5 primeras son las entidades del sistema (5 columnas cada una).
+__efmigrationshistory es una tabla interna de Entity Framework:
+registra las migraciones aplicadas y no forma parte del modelo.
+
+Para comprobar las relaciones entre tablas:
+
+   SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME
+   FROM information_schema.KEY_COLUMN_USAGE
+   WHERE TABLE_SCHEMA = 'biblioteca'
+     AND REFERENCED_TABLE_NAME IS NOT NULL;
+
+Resultado esperado (4 relaciones):
+   libros     AutorId      -> autores
+   libros     CategoriaId  -> categorias
+   prestamos  LibroId      -> libros
+   prestamos  SocioId      -> socios
+
+
+PASO 4. VALIDAR LA APLICACION
+-----------------------------
+Presionar F5. Se abre http://localhost:5101
+Realizar las pruebas en este orden:
+
+ Ejemplos:
+
+ 1. Categorias: crear "Novela", codigo NOV.
+    -> Se guarda.
+
+ 2. Autores: crear Gabriel Garcia Marquez, colombiana, 06/03/1927.
+    -> Se guarda.
+
+ 3. Autores: repetir el mismo autor y la misma fecha.
+    -> Mensaje "Ya existe el autor...". No se guarda.
+
+ 4. Libros: crear "Cien anos de soledad", 1967.
+    -> En la lista de autores aparece nombre, nacionalidad y fecha.
+
+ 5. Socios: crear un socio con cedula de 10 digitos.
+    -> Se guarda. Con cedula repetida muestra error.
+
+ 6. Prestamos: libro y socio anteriores, del 01/12/2026 al 05/12/2026.
+    -> Se guarda.
+
+ 7. Prestamos: el mismo libro del 03/12/2026 al 04/12/2026.
+    -> Mensaje "...ya tiene este libro prestado...". No se guarda.
+
+ 8. Prestamos: fecha de devolucion anterior a la de prestamo.
+    -> Mensaje de error. No se guarda.
+
+ 9. Categorias: eliminar "Novela" (tiene libros asociados).
+    -> Mensaje "No se puede eliminar: el registro tiene datos
+       relacionados".
+
+
+POSIBLES PROBLEMAS
+------------------
+- "Access denied for user 'root'":
+    contrasena incorrecta o no se guardo el paso 1.
+- "Unable to connect to any of the specified MySQL hosts":
+    MySQL no esta iniciado o usa otro puerto.
+- "Table 'biblioteca...' doesn't exist":
+    falta ejecutar el paso 2 (Update-Database).
